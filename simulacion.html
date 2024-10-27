@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación de Trayectoria Parabólica en 3D</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #gui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="gui">
+        <label for="xTargetInput">Ingrese la distancia objetivo (x) en metros:</label><br>
+        <input type="number" id="xTargetInput" value="30">
+        <label for="scaleInput">Escala para vectores de velocidad:</label><br>
+        <input type="number" id="scaleInput" value="1" step="0.1" min="0.1">
+        <button onclick="startSimulation()">Iniciar Simulación</button>
+        <p id="angleResult"></p>
+    </div>
+    <script>
+        // Variables globales
+        let scene, camera, renderer, controls;
+        let trajectoryMesh, vectorGroup;
+        let v0 = 25; // Velocidad inicial (m/s)
+        let g = 9.81; // Gravedad (m/s²)
+
+        // Inicialización de la escena
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            camera.position.set(30, 20, 50);
+            controls.update();
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(10, 20, 10);
+            scene.add(directionalLight);
+
+            const planeGeometry = new THREE.PlaneGeometry(100, 100);
+            const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            scene.add(plane);
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function startSimulation() {
+            const xTarget = parseFloat(document.getElementById('xTargetInput').value);
+            const scaleVectors = parseFloat(document.getElementById('scaleInput').value);
+            const angleOptimo = calculateOptimalAngle(xTarget);
+
+            document.getElementById('angleResult').innerText = `Ángulo óptimo: ${angleOptimo.toFixed(2)}°`;
+
+            if (trajectoryMesh) scene.remove(trajectoryMesh);
+            if (vectorGroup) scene.remove(vectorGroup);
+
+            drawTrajectory(xTarget, angleOptimo, scaleVectors);
+        }
+
+        function calculateOptimalAngle(xTarget) {
+            let optimalAngle = 45; // Valor por defecto
+            const objective = (angle) => Math.abs(alturaEnX(angle, xTarget));
+            const bounds = { min: 0, max: 90 };
+
+            // Búsqueda simple para encontrar el ángulo
+            for (let angle = bounds.min; angle <= bounds.max; angle += 0.1) {
+                if (objective(angle) < objective(optimalAngle)) {
+                    optimalAngle = angle;
+                }
+            }
+            return optimalAngle;
+        }
+
+        function alturaEnX(angle, x) {
+            const angleRad = angle * Math.PI / 180;
+            return x * Math.tan(angleRad) - (g * x * x) / (2 * v0 * v0 * Math.cos(angleRad) * Math.cos(angleRad));
+        }
+
+        function drawTrajectory(xTarget, angle, scaleVectors) {
+            let angleRad = angle * Math.PI / 180;
+            let tMax = (2 * v0 * Math.sin(angleRad)) / g;
+            let points = [];
+
+            for (let t = 0; t <= tMax; t += tMax / 100) {
+                let x = v0 * Math.cos(angleRad) * t;
+                let y = v0 * Math.sin(angleRad) * t - 0.5 * g * t * t;
+                points.push(new THREE.Vector3(x, Math.max(y, 0), 0));
+            }
+
+            const curve = new THREE.CatmullRomCurve3(points);
+            const geometry = new THREE.TubeGeometry(curve, 100, 0.2, 8, false);
+            const material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+            trajectoryMesh = new THREE.Mesh(geometry, material);
+            scene.add(trajectoryMesh);
+
+            vectorGroup = new THREE.Group();
+            drawVectors(points, angle, scaleVectors);
+            scene.add(vectorGroup);
+        }
+
+        function drawVectors(points, angle, scaleVectors) {
+            points.forEach((point, index) => {
+                if (index % 10 === 0) {
+                    let vx = v0 * Math.cos(angle * Math.PI / 180);
+                    let vy = v0 * Math.sin(angle * Math.PI / 180) - g * (index / 100) * (2 * v0 * Math.sin(angle * Math.PI / 180)) / g;
+
+                    const dirX = new THREE.Vector3(1, 0, 0).normalize();
+                    const arrowX = new THREE.ArrowHelper(dirX, point, vx * scaleVectors * 0.1, 0xff0000);
+                    vectorGroup.add(arrowX);
+
+                    const dirY = new THREE.Vector3(0, 1, 0).normalize();
+                    const arrowY = new THREE.ArrowHelper(dirY, point, vy * scaleVectors * 0.1, 0x00ff00);
+                    vectorGroup.add(arrowY);
+
+                    const dirResultante = new THREE.Vector3(vx, vy, 0).normalize();
+                    const arrowResultante = new THREE.ArrowHelper(dirResultante, point, Math.sqrt(vx * vx + vy * vy) * scaleVectors * 0.1, 0x000000);
+                    vectorGroup.add(arrowResultante);
+                }
+            });
+        }
+
+        window.onload = init;
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

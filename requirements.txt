@@ -1,0 +1,8 @@
+asyncio 
+flask 
+dash 
+plotly
+pyserial
+matplotlib 
+numpy
+scipy
