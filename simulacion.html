@@ -26,17 +26,18 @@
     <div id="gui">
         <label for="xTargetInput">Ingrese la distancia objetivo (x) en metros:</label><br>
         <input type="number" id="xTargetInput" value="30">
-        <label for="scaleInput">Escala para vectores de velocidad:</label><br>
-        <input type="number" id="scaleInput" value="1" step="0.1" min="0.1">
         <button onclick="startSimulation()">Iniciar Simulación</button>
-        <p id="angleResult"></p>
+        <p id="result"></p>
     </div>
     <script>
         // Variables globales
         let scene, camera, renderer, controls;
-        let trajectoryMesh, vectorGroup;
+        let trajectoryMesh, vectorGroup, axesHelper, gridHelper, trajectoryPoints;
         let v0 = 25; // Velocidad inicial (m/s)
         let g = 9.81; // Gravedad (m/s²)
+        let escalaVectores = 0.1; // Escala de los vectores
+        let angleOptimo = 45; // Ángulo inicial (será calculado)
+        
 
         // Inicialización de la escena
         function init() {
@@ -50,68 +51,77 @@
             camera.position.set(30, 20, 50);
             controls.update();
 
+            // Luz ambiental
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
+
+            // Luz direccional
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
             directionalLight.position.set(10, 20, 10);
             scene.add(directionalLight);
 
-            const planeGeometry = new THREE.PlaneGeometry(100, 100);
-            const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd });
-            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-            plane.rotation.x = -Math.PI / 2;
-            scene.add(plane);
+            // Añadir ejes de coordenadas y grilla de fondo
+            axesHelper = new THREE.AxesHelper(10);
+            scene.add(axesHelper);
+
+            gridHelper = new THREE.GridHelper(100, 20);
+            scene.add(gridHelper);
 
             animate();
         }
 
+        // Función de animación
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             renderer.render(scene, camera);
         }
 
+        // Función para iniciar la simulación
         function startSimulation() {
-            const xTarget = parseFloat(document.getElementById('xTargetInput').value);
-            const scaleVectors = parseFloat(document.getElementById('scaleInput').value);
-            const angleOptimo = calculateOptimalAngle(xTarget);
-
-            document.getElementById('angleResult').innerText = `Ángulo óptimo: ${angleOptimo.toFixed(2)}°`;
+            let xTarget = parseFloat(document.getElementById('xTargetInput').value);
+            angleOptimo = findOptimalAngle(xTarget); // Calcular el ángulo óptimo
+            document.getElementById('result').innerText = `Ángulo calculado para alcanzar x = ${xTarget} m: ${angleOptimo.toFixed(2)}°`;
 
             if (trajectoryMesh) scene.remove(trajectoryMesh);
             if (vectorGroup) scene.remove(vectorGroup);
 
-            drawTrajectory(xTarget, angleOptimo, scaleVectors);
+            drawTrajectory(xTarget, angleOptimo);
         }
 
-        function calculateOptimalAngle(xTarget) {
-            let optimalAngle = 45; // Valor por defecto
-            const objective = (angle) => Math.abs(alturaEnX(angle, xTarget));
-            const bounds = { min: 0, max: 90 };
+        // Calcular el ángulo óptimo para alcanzar la distancia xTarget
+        function findOptimalAngle(xTarget) {
+            let angle = 45;
+            let tolerance = 0.1;
+            let maxIterations = 100;
 
-            // Búsqueda simple para encontrar el ángulo
-            for (let angle = bounds.min; angle <= bounds.max; angle += 0.1) {
-                if (objective(angle) < objective(optimalAngle)) {
-                    optimalAngle = angle;
+            for (let i = 0; i < maxIterations; i++) {
+                let angleRad = angle * Math.PI / 180;
+                let xReach = (v0 ** 2 * Math.sin(2 * angleRad)) / g;
+                if (Math.abs(xReach - xTarget) < tolerance) {
+                    return angle;
+                } else if (xReach < xTarget) {
+                    angle += 1;
+                } else {
+                    angle -= 1;
                 }
             }
-            return optimalAngle;
+
+            return angle;
         }
 
-        function alturaEnX(angle, x) {
-            const angleRad = angle * Math.PI / 180;
-            return x * Math.tan(angleRad) - (g * x * x) / (2 * v0 * v0 * Math.cos(angleRad) * Math.cos(angleRad));
-        }
-
-        function drawTrajectory(xTarget, angle, scaleVectors) {
+        // Dibujar la trayectoria y crear la animación
+        function drawTrajectory(xTarget, angle) {
             let angleRad = angle * Math.PI / 180;
-            let tMax = (2 * v0 * Math.sin(angleRad)) / g;
             let points = [];
+            trajectoryPoints = []; // Guardar los puntos para la animación
+            vectorGroup = new THREE.Group();
 
-            for (let t = 0; t <= tMax; t += tMax / 100) {
-                let x = v0 * Math.cos(angleRad) * t;
-                let y = v0 * Math.sin(angleRad) * t - 0.5 * g * t * t;
-                points.push(new THREE.Vector3(x, Math.max(y, 0), 0));
+            // Generar puntos en la trayectoria usando la fórmula dada
+            for (let x = 0; x <= xTarget; x += 0.5) {
+                let y = v0 * Math.tan(angleRad) * x - (g * x ** 2) / (2 * v0 ** 2 * Math.cos(angleRad) ** 2);
+                points.push(new THREE.Vector3(x, y, 0));
+                trajectoryPoints.push({ x, y });
             }
 
             const curve = new THREE.CatmullRomCurve3(points);
@@ -120,34 +130,63 @@
             trajectoryMesh = new THREE.Mesh(geometry, material);
             scene.add(trajectoryMesh);
 
-            vectorGroup = new THREE.Group();
-            drawVectors(points, angle, scaleVectors);
             scene.add(vectorGroup);
+
+            animateTrajectory();
         }
 
-        function drawVectors(points, angle, scaleVectors) {
-            points.forEach((point, index) => {
-                if (index % 10 === 0) {
-                    let vx = v0 * Math.cos(angle * Math.PI / 180);
-                    let vy = v0 * Math.sin(angle * Math.PI / 180) - g * (index / 100) * (2 * v0 * Math.sin(angle * Math.PI / 180)) / g;
+        // Función para animar la trayectoria
+        function animateTrajectory() {
+            let index = 0;
 
-                    const dirX = new THREE.Vector3(1, 0, 0).normalize();
-                    const arrowX = new THREE.ArrowHelper(dirX, point, vx * scaleVectors * 0.1, 0xff0000);
-                    vectorGroup.add(arrowX);
+            function animatePoint() {
+                if (index >= trajectoryPoints.length) return;
 
-                    const dirY = new THREE.Vector3(0, 1, 0).normalize();
-                    const arrowY = new THREE.ArrowHelper(dirY, point, vy * scaleVectors * 0.1, 0x00ff00);
-                    vectorGroup.add(arrowY);
+                let point = trajectoryPoints[index];
+                let x = point.x;
+                let y = point.y;
 
-                    const dirResultante = new THREE.Vector3(vx, vy, 0).normalize();
-                    const arrowResultante = new THREE.ArrowHelper(dirResultante, point, Math.sqrt(vx * vx + vy * vy) * scaleVectors * 0.1, 0x000000);
-                    vectorGroup.add(arrowResultante);
-                }
-            });
+                // Calcular velocidades en x y y
+                let angleRad = angleOptimo * Math.PI / 180;
+                let vx = v0 * Math.cos(angleRad);
+                let vy = v0 * Math.sin(angleRad) - g * (x / vx);
+
+                // Dibujar vectores
+                vectorGroup.clear(); // Limpiar vectores previos
+                drawVector(x, y, vx, vy);
+
+                index++;
+                requestAnimationFrame(animatePoint);
+            }
+
+            animatePoint();
         }
 
+        // Dibujar los vectores de velocidad
+        function drawVector(x, y, vx, vy) {
+            // Posición actual
+            const point = new THREE.Vector3(x, y, 0);
+
+            // Vector velocidad en X (rojo)
+            const dirX = new THREE.Vector3(1, 0, 0).normalize();
+            const arrowX = new THREE.ArrowHelper(dirX, point, vx * escalaVectores, 0xff0000);
+            vectorGroup.add(arrowX);
+
+            // Vector velocidad en Y (verde)
+            const dirY = new THREE.Vector3(0, 1, 0).normalize();
+            const arrowY = new THREE.ArrowHelper(dirY, point, vy * escalaVectores, 0x00ff00);
+            vectorGroup.add(arrowY);
+
+            // Vector resultante (negro)
+            const dirResultante = new THREE.Vector3(vx, vy, 0).normalize();
+            const arrowResultante = new THREE.ArrowHelper(dirResultante, point, Math.sqrt(vx ** 2 + vy ** 2) * escalaVectores, 0x000000);
+            vectorGroup.add(arrowResultante);
+        }
+
+        // Inicializar la escena
         window.onload = init;
 
+        // Ajustar el tamaño del canvas al cambiar el tamaño de la ventana
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
