@@ -2,16 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-
-// Credenciales WiFi
-const char* ssid = "BigWhiterBy";
-const char* password = "Liomatis2605";
-
-// Dirección IP del servidor y puerto
-const char* serverIP = "192.168.101.77";  // Cambia a la IP de tu servidor
-const uint16_t serverPort = 12345;
-
-WiFiClient client;
+#include "config.h"  // Incluye el archivo de configuración
 
 // Definir pines GPIO para los sensores
 #define DHT22_PIN 4
@@ -24,6 +15,8 @@ WiFiClient client;
 // Definir tipos de sensores
 #define DHTTYPE_22 DHT22
 #define DHTTYPE_11 DHT11
+
+WiFiClient client;
 
 // Crear instancias de los sensores DHT
 DHT dht22(DHT22_PIN, DHTTYPE_22);
