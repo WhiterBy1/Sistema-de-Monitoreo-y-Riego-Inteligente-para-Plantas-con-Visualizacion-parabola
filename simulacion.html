@@ -3,195 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulación de Trayectoria Parabólica en 3D</title>
+    <title>Simulación de Trayectoria Parabólica en 2D</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
+            font-family: Arial, sans-serif;
+            text-align: center;
         }
-        #gui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-            background-color: white;
-            padding: 10px;
-            border-radius: 8px;
+        .chart {
+            display: inline-block;
+            margin: 20px;
+            border: 1px solid #ddd;
+        }
+        #controls {
+            margin-top: 20px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <div id="gui">
-        <label for="xTargetInput">Ingrese la distancia objetivo (x) en metros:</label><br>
-        <input type="number" id="xTargetInput" value="30">
+    <h2>Simulación de Trayectoria Parabólica en 2D</h2>
+    <div id="controls">
+        <label for="xTarget">Ingrese la distancia objetivo (x) en metros:</label>
+        <input type="number" id="xTarget" value="30">
         <button onclick="startSimulation()">Iniciar Simulación</button>
         <p id="result"></p>
     </div>
+    <div id="chart" class="chart"></div>
+
     <script>
-        // Variables globales
-        let scene, camera, renderer, controls;
-        let trajectoryMesh, vectorGroup, axesHelper, gridHelper, trajectoryPoints;
-        let v0 = 25; // Velocidad inicial (m/s)
-        let g = 9.81; // Gravedad (m/s²)
-        let escalaVectores = 0.1; // Escala de los vectores
-        let angleOptimo = 45; // Ángulo inicial (será calculado)
-        
+        // Parámetros globales
+        const g = 9.81; // Gravedad (m/s²)
+        const v0 = 25; // Velocidad inicial (m/s)
+        let escalaVectores = 0.1; // Escala para los vectores
 
-        // Inicialización de la escena
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            camera.position.set(30, 20, 50);
-            controls.update();
-
-            // Luz ambiental
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-
-            // Luz direccional
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            directionalLight.position.set(10, 20, 10);
-            scene.add(directionalLight);
-
-            // Añadir ejes de coordenadas y grilla de fondo
-            axesHelper = new THREE.AxesHelper(10);
-            scene.add(axesHelper);
-
-            gridHelper = new THREE.GridHelper(100, 20);
-            scene.add(gridHelper);
-
-            animate();
-        }
-
-        // Función de animación
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
+        // Crear el SVG para D3.js
+        const width = 800, height = 400;
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .style("background-color", "#f3f3f3");
 
         // Función para iniciar la simulación
         function startSimulation() {
-            let xTarget = parseFloat(document.getElementById('xTargetInput').value);
-            angleOptimo = findOptimalAngle(xTarget); // Calcular el ángulo óptimo
+            const xTarget = parseFloat(document.getElementById('xTarget').value);
+            const angleOptimo = findOptimalAngle(xTarget);
             document.getElementById('result').innerText = `Ángulo calculado para alcanzar x = ${xTarget} m: ${angleOptimo.toFixed(2)}°`;
 
-            if (trajectoryMesh) scene.remove(trajectoryMesh);
-            if (vectorGroup) scene.remove(vectorGroup);
-
+            svg.selectAll("*").remove(); // Limpiar el SVG antes de dibujar
             drawTrajectory(xTarget, angleOptimo);
         }
 
-        // Calcular el ángulo óptimo para alcanzar la distancia xTarget
+        // Función para calcular el ángulo óptimo usando optimización
         function findOptimalAngle(xTarget) {
-            let angle = 45;
-            let tolerance = 0.1;
-            let maxIterations = 100;
+            const tolerance = 0.01; // Tolerancia para la optimización
+            let angleLow = 0, angleHigh = 90;
+            let angleOptimo = 45;
 
-            for (let i = 0; i < maxIterations; i++) {
-                let angleRad = angle * Math.PI / 180;
-                let xReach = (v0 ** 2 * Math.sin(2 * angleRad)) / g;
-                if (Math.abs(xReach - xTarget) < tolerance) {
-                    return angle;
-                } else if (xReach < xTarget) {
-                    angle += 1;
+            while (angleHigh - angleLow > tolerance) {
+                const angleMid = (angleLow + angleHigh) / 2;
+                const yAtX = alturaEnX(angleMid, xTarget);
+
+                if (yAtX > 0) {
+                    angleLow = angleMid;
                 } else {
-                    angle -= 1;
+                    angleHigh = angleMid;
                 }
-            }
 
-            return angle;
+                angleOptimo = (angleLow + angleHigh) / 2;
+            }
+            return angleOptimo;
         }
 
-        // Dibujar la trayectoria y crear la animación
+        // Función para calcular la altura en x con un ángulo dado
+        function alturaEnX(angle, xTarget) {
+            const angleRad = angle * Math.PI / 180;
+            return xTarget * Math.tan(angleRad) - (g * xTarget * xTarget) / (2 * v0 * v0 * Math.cos(angleRad) ** 2);
+        }
+
+        // Dibujar la trayectoria parabólica
         function drawTrajectory(xTarget, angle) {
-            let angleRad = angle * Math.PI / 180;
-            let points = [];
-            trajectoryPoints = []; // Guardar los puntos para la animación
-            vectorGroup = new THREE.Group();
+            const angleRad = angle * Math.PI / 180;
+            const points = [];
+            const vx = v0 * Math.cos(angleRad);
+            const vy0 = v0 * Math.sin(angleRad);
 
-            // Generar puntos en la trayectoria usando la fórmula dada
+            // Generar puntos de la trayectoria
             for (let x = 0; x <= xTarget; x += 0.5) {
-                let y = v0 * Math.tan(angleRad) * x - (g * x ** 2) / (2 * v0 ** 2 * Math.cos(angleRad) ** 2);
-                points.push(new THREE.Vector3(x, y, 0));
-                trajectoryPoints.push({ x, y });
+                const y = x * Math.tan(angleRad) - (g * x * x) / (2 * v0 * v0 * Math.cos(angleRad) ** 2);
+                points.push([x, y]);
             }
 
-            const curve = new THREE.CatmullRomCurve3(points);
-            const geometry = new THREE.TubeGeometry(curve, 100, 0.2, 8, false);
-            const material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-            trajectoryMesh = new THREE.Mesh(geometry, material);
-            scene.add(trajectoryMesh);
+            // Escalas para convertir metros a píxeles
+            const xScale = d3.scaleLinear().domain([0, xTarget * 1.5]).range([50, width - 50]);
+            const yScale = d3.scaleLinear().domain([0, Math.max(...points.map(p => p[1])) * 1.2]).range([height - 50, 50]);
 
-            scene.add(vectorGroup);
+            // Línea de trayectoria
+            const line = d3.line()
+                .x(d => xScale(d[0]))
+                .y(d => yScale(d[1]));
 
-            animateTrajectory();
-        }
+            svg.append("path")
+                .datum(points)
+                .attr("d", line)
+                .attr("fill", "none")
+                .attr("stroke", "blue")
+                .attr("stroke-width", 2);
 
-        // Función para animar la trayectoria
-        function animateTrajectory() {
+            // Animación de la trayectoria
             let index = 0;
-
             function animatePoint() {
-                if (index >= trajectoryPoints.length) return;
+                if (index >= points.length) return;
 
-                let point = trajectoryPoints[index];
-                let x = point.x;
-                let y = point.y;
+                const [x, y] = points[index];
+                const t = x / vx;
+                const vy = vy0 - g * t;
 
-                // Calcular velocidades en x y y
-                let angleRad = angleOptimo * Math.PI / 180;
-                let vx = v0 * Math.cos(angleRad);
-                let vy = v0 * Math.sin(angleRad) - g * (x / vx);
+                svg.selectAll(".point, .vector").remove();
 
-                // Dibujar vectores
-                vectorGroup.clear(); // Limpiar vectores previos
-                drawVector(x, y, vx, vy);
+                // Punto de posición actual
+                svg.append("circle")
+                    .attr("class", "point")
+                    .attr("cx", xScale(x))
+                    .attr("cy", yScale(y))
+                    .attr("r", 5)
+                    .attr("fill", "red");
+
+                // Vector de velocidad en x (rojo)
+                svg.append("line")
+                    .attr("class", "vector")
+                    .attr("x1", xScale(x))
+                    .attr("y1", yScale(y))
+                    .attr("x2", xScale(x + vx * escalaVectores))
+                    .attr("y2", yScale(y))
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 2);
+
+                // Vector de velocidad en y (verde)
+                svg.append("line")
+                    .attr("class", "vector")
+                    .attr("x1", xScale(x))
+                    .attr("y1", yScale(y))
+                    .attr("x2", xScale(x))
+                    .attr("y2", yScale(y + vy * escalaVectores))
+                    .attr("stroke", "green")
+                    .attr("stroke-width", 2);
+
+                // Vector de velocidad total (negro)
+                svg.append("line")
+                    .attr("class", "vector")
+                    .attr("x1", xScale(x))
+                    .attr("y1", yScale(y))
+                    .attr("x2", xScale(x + vx * escalaVectores))
+                    .attr("y2", yScale(y + vy * escalaVectores))
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 2);
 
                 index++;
                 requestAnimationFrame(animatePoint);
             }
 
             animatePoint();
+
+            // Ejes de la gráfica
+            svg.append("line")
+                .attr("x1", xScale(0))
+                .attr("y1", yScale(0))
+                .attr("x2", xScale(xTarget * 1.5))
+                .attr("y2", yScale(0))
+                .attr("stroke", "black")
+                .attr("stroke-width", 1);
+
+            svg.append("line")
+                .attr("x1", xScale(0))
+                .attr("y1", yScale(0))
+                .attr("x2", xScale(0))
+                .attr("y2", yScale(Math.max(...points.map(p => p[1])) * 1.2))
+                .attr("stroke", "black")
+                .attr("stroke-width", 1);
         }
-
-        // Dibujar los vectores de velocidad
-        function drawVector(x, y, vx, vy) {
-            // Posición actual
-            const point = new THREE.Vector3(x, y, 0);
-
-            // Vector velocidad en X (rojo)
-            const dirX = new THREE.Vector3(1, 0, 0).normalize();
-            const arrowX = new THREE.ArrowHelper(dirX, point, vx * escalaVectores, 0xff0000);
-            vectorGroup.add(arrowX);
-
-            // Vector velocidad en Y (verde)
-            const dirY = new THREE.Vector3(0, 1, 0).normalize();
-            const arrowY = new THREE.ArrowHelper(dirY, point, vy * escalaVectores, 0x00ff00);
-            vectorGroup.add(arrowY);
-
-            // Vector resultante (negro)
-            const dirResultante = new THREE.Vector3(vx, vy, 0).normalize();
-            const arrowResultante = new THREE.ArrowHelper(dirResultante, point, Math.sqrt(vx ** 2 + vy ** 2) * escalaVectores, 0x000000);
-            vectorGroup.add(arrowResultante);
-        }
-
-        // Inicializar la escena
-        window.onload = init;
-
-        // Ajustar el tamaño del canvas al cambiar el tamaño de la ventana
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
