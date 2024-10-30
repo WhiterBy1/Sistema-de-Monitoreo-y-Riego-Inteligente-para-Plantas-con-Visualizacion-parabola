@@ -10,8 +10,9 @@ import plotly.graph_objs as go
 # Datos recibidos (almacenados en un DataFrame para facilitar el análisis)
 data_df = pd.DataFrame(columns=["timestamp", "temperatura_DHT22", "temperatura_DHT11", 
                                 "temperatura_LM35_1", "temperatura_LM35_2", 
-                                "humedad_suelo_1", "humedad_suelo_2",
-                                "promedio_temperatura", "promedio_humedad"])
+                                "humedad_suelo_1", "humedad_suelo_2", 
+                                "humedad_suelo_3", "humedad_DHT22", "humedad_DHT11",
+                                "promedio_temperatura"])
 
 # Clase para manejar las conexiones al servidor
 class SensorTCPHandler(socketserver.BaseRequestHandler):
@@ -24,7 +25,7 @@ class SensorTCPHandler(socketserver.BaseRequestHandler):
                     break
 
                 message = data.decode('utf-8').strip()
-                if not message:  # Si la línea está vacía, continúa
+                if not message:
                     continue
 
                 print(f"Datos recibidos: {message}")
@@ -32,9 +33,9 @@ class SensorTCPHandler(socketserver.BaseRequestHandler):
                 # Separar los datos por comas
                 try:
                     parts = message.split(",")
-                    if len(parts) == 8:
+                    if len(parts) == 10:
                         # Convertir las partes a float
-                        tempDHT22, tempDHT11, tempLM35_1, tempLM35_2, humedadSuelo1, humedadSuelo2, promedioTemp, promedioHumedad = map(float, parts)
+                        tempDHT22, tempDHT11, tempLM35_1, tempLM35_2, humedadSuelo1, humedadSuelo2, humedadSuelo3, humedadDHT22, humedadDHT11, promedioTemp = map(float, parts)
                         new_data = {
                             "timestamp": datetime.datetime.now(),
                             "temperatura_DHT22": tempDHT22,
@@ -43,11 +44,13 @@ class SensorTCPHandler(socketserver.BaseRequestHandler):
                             "temperatura_LM35_2": tempLM35_2,
                             "humedad_suelo_1": humedadSuelo1,
                             "humedad_suelo_2": humedadSuelo2,
-                            "promedio_temperatura": promedioTemp,
-                            "promedio_humedad": promedioHumedad
+                            "humedad_suelo_3": humedadSuelo3,
+                            "humedad_DHT22": humedadDHT22,
+                            "humedad_DHT11": humedadDHT11,
+                            "promedio_temperatura": promedioTemp
                         }
                         data_df = pd.concat([data_df, pd.DataFrame([new_data])], ignore_index=True)
-                        if len(data_df) > 100:  # Mantener un historial de hasta 100 entradas
+                        if len(data_df) > 100:
                             data_df = data_df.iloc[-100:]
                     else:
                         print(f"Error: Número de partes incorrecto ({len(parts)}) en los datos recibidos: {message}")
@@ -101,7 +104,7 @@ app.layout = html.Div([
     # Intervalo para actualizar gráficos automáticamente
     dcc.Interval(
         id="interval-component",
-        interval=2000,  # Actualizar cada 2 segundos
+        interval=2000,
         n_intervals=0
     )
 ], style={"margin": "20px"})
@@ -135,11 +138,14 @@ def update_graphs(n):
     humidity_fig = go.Figure()
     humidity_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["humedad_suelo_1"], mode='lines+markers', name="Humedad Suelo 1 (%)"))
     humidity_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["humedad_suelo_2"], mode='lines+markers', name="Humedad Suelo 2 (%)"))
-    humidity_fig.update_layout(title="Humedad del Suelo en Tiempo Real", xaxis_title="Tiempo", yaxis_title="Humedad (%)", template="plotly_dark")
+    humidity_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["humedad_suelo_3"], mode='lines+markers', name="Humedad Suelo 3 (%)"))
+    humidity_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["humedad_DHT22"], mode='lines+markers', name="Humedad DHT22 (%)"))
+    humidity_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["humedad_DHT11"], mode='lines+markers', name="Humedad DHT11 (%)"))
+    humidity_fig.update_layout(title="Humedad en Tiempo Real", xaxis_title="Tiempo", yaxis_title="Humedad (%)", template="plotly_dark")
 
     # Indicadores Resumen
     max_temp = data_df[["temperatura_DHT22", "temperatura_DHT11", "temperatura_LM35_1", "temperatura_LM35_2"]].max().max()
-    avg_humidity = data_df[["humedad_suelo_1", "humedad_suelo_2"]].mean().mean()
+    avg_humidity = data_df[["humedad_suelo_1", "humedad_suelo_2", "humedad_suelo_3", "humedad_DHT22", "humedad_DHT11"]].mean().mean()
     data_count = len(data_df)
 
     return temperature_fig, humidity_fig, f"{max_temp:.2f} °C", f"{avg_humidity:.2f} %", str(data_count)

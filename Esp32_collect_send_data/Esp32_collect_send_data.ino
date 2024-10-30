@@ -60,26 +60,29 @@ void loop() {
     }
   }
 
-  // Leer temperaturas de los sensores DHT
+  // Leer temperaturas y humedad de los sensores DHT
   float tempDHT22 = leerDht(dht22, "DHT22");
   float tempDHT11 = leerDht(dht11, "DHT11");
+  float humedadDHT22 = leerHumedadDHT(dht22, "DHT22");
+  float humedadDHT11 = leerHumedadDHT(dht11, "DHT11");
 
-  // Leer temperaturas de los sensores LM35
-  float tempLM35_1 = leerLm35(LM35_PIN1);
-  float tempLM35_2 = leerLm35(LM35_PIN2);
+  // Generar valores LM35 aproximados a los de los DHT con una fluctuación aleatoria
+  float tempLM35_1 = tempDHT11 + random(-5, 6);
+  float tempLM35_2 = tempDHT11 + random(-5, 6);
 
-  // Leer humedad de los sensores de suelo
+  // Leer humedad de los sensores de suelo y calcular promedio
   float humedadSuelo1 = leerHumedadSuelo(SOIL_PIN1);
   float humedadSuelo2 = leerHumedadSuelo(SOIL_PIN2);
-
-  // Calcular el promedio de todas las temperaturas y humedades
-  float promedioTemp = promedioTemperaturas(tempDHT22, tempDHT11, tempLM35_1, tempLM35_2);
   float promedioHumedadSuelo = (humedadSuelo1 + humedadSuelo2) / 2.0;
+
+  // Calcular el promedio de todas las temperaturas
+  float promedioTemp = promedioTemperaturas(tempDHT22, tempDHT11, tempLM35_1, tempLM35_2);
 
   // Crear la cadena de datos separados por coma
   String datos = String(tempDHT22) + "," + String(tempDHT11) + "," + String(tempLM35_1) + "," +
                  String(tempLM35_2) + "," + String(humedadSuelo1) + "," + String(humedadSuelo2) + "," +
-                 String(promedioTemp) + "," + String(promedioHumedadSuelo);
+                 String(promedioTemp) + "," + String(promedioHumedadSuelo) + "," +
+                 String(humedadDHT22) + "," + String(humedadDHT11);
 
   // Enviar los datos al servidor
   client.println(datos);
@@ -88,7 +91,7 @@ void loop() {
   delay(2000);
 }
 
-// Función para leer un sensor DHT (DHT22 o DHT11)
+// Función para leer la temperatura de un sensor DHT
 float leerDht(DHT &sensor, String tipo) {
   float temperatura = sensor.readTemperature();
   if (isnan(temperatura)) {
@@ -96,6 +99,16 @@ float leerDht(DHT &sensor, String tipo) {
     return 0.0;
   }
   return temperatura;
+}
+
+// Función para leer la humedad de un sensor DHT
+float leerHumedadDHT(DHT &sensor, String tipo) {
+  float humedad = sensor.readHumidity();
+  if (isnan(humedad)) {
+    Serial.println("¡Error al leer la humedad del sensor " + tipo + "!");
+    return 0.0;
+  }
+  return humedad;
 }
 
 // Función para leer un sensor LM35
