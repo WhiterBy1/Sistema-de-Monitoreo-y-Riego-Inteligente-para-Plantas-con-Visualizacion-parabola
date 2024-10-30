@@ -12,7 +12,7 @@ escala_vectores = float(input("Ingrese el valor de escala para los vectores de v
 # Función que calcula la altura para un ángulo dado
 def altura_en_x(angle_deg):
     angle_rad = np.radians(angle_deg)
-    y = x_target * np.tan(angle_rad) - (g * x_target**2) / (2 * v0**2 * np.cos(angle_rad)**2)
+    y = v0 * np.tan(angle_rad) - (g * x_target**2) / (2 * v0**2 * np.cos(angle_rad)**2)
     return y
 
 # Buscar el ángulo que hace que la altura sea cercana a cero en x = x_target
