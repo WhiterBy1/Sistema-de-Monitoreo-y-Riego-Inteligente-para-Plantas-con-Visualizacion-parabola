@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -9,26 +8,31 @@ v0 = 25  # Velocidad inicial (m/s)
 x_target = float(input("Ingrese la distancia en el eje x donde quiere que la altura sea 0: "))
 escala_vectores = float(input("Ingrese el valor de escala para los vectores de velocidad (prueba distintos valores): "))
 
-# Función que calcula la altura para un ángulo dado
-def altura_en_x(angle_deg):
-    angle_rad = np.radians(angle_deg)
-    y = v0 * np.tan(angle_rad) - (g * x_target**2) / (2 * v0**2 * np.cos(angle_rad)**2)
-    return y
+# Comprobar si el objetivo es alcanzable con la velocidad inicial dada
+s = (g * x_target) / (v0 ** 2)
+if abs(s) > 1:
+    print("El objetivo está fuera del alcance máximo para la velocidad inicial dada.")
+    exit()
 
-# Buscar el ángulo que hace que la altura sea cercana a cero en x = x_target
-def objetivo(angle_deg):
-    return abs(altura_en_x(angle_deg))
-
-# Utilizar optimización para encontrar el ángulo que minimiza la altura en x = x_target
-resultado = opt.minimize_scalar(objetivo, bounds=(0, 90), method='bounded')
-angulo_optimo = resultado.x
+# Calcular el ángulo óptimo usando física
+theta_rad = 0.5 * np.arcsin(s)
+angulo_optimo = np.degrees(theta_rad)
 
 # Mostrar resultados del debug
 print(f"El ángulo óptimo para que la altura en x = {x_target} sea 0 es aproximadamente: {angulo_optimo:.2f}°")
-print(f"Valor mínimo encontrado para la altura: {altura_en_x(angulo_optimo):.5f} m (debería ser cercano a 0)")
+# Cálculo del ángulo óptimo usando física
+theta_rad = 0.5 * np.arcsin((g * x_target) / (v0 ** 2))
+angulo_optimo = np.degrees(theta_rad)
+
+# Parámetros para la ecuación de la parábola
+tan_theta = np.tan(theta_rad)
+cos_theta_squared = np.cos(theta_rad) ** 2
+
+# Mostrar la ecuación de la parábola en la terminal
+print(f"Ecuación de la parábola: y = {tan_theta:.3f} * x - ({g / (2 * v0**2 * cos_theta_squared):.3f}) * x^2")
 
 # Generar puntos para la trayectoria con el ángulo óptimo
-angle_rad = np.radians(angulo_optimo)
+angle_rad = theta_rad
 t_max = (2 * v0 * np.sin(angle_rad)) / g  # Tiempo total de vuelo
 t_vals = np.linspace(0, t_max, 500)  # Valores de tiempo
 
