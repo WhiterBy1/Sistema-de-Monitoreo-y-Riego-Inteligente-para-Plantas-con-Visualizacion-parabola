@@ -20,7 +20,7 @@ Este proyecto es ideal para desarrolladores y entusiastas de la tecnología agr�
 ### 3. Servidor TCP y Dashboard en Tiempo Real
    - Descripción: Una aplicación basada en Flask y Dash que recibe datos de los sensores en tiempo real, los almacena en un DataFrame de pandas y muestra métricas en un dashboard interactivo. Los gráficos en tiempo real permiten tomar decisiones informadas sobre el riego, con visualización de indicadores como la temperatura y humedad del suelo.
    - Tecnologías: Python, Flask, Dash, Plotly
-   - Archivo principal: `import socket.py`
+   - Archivo principal: `AnalisisDatos.py`
 
 ### 4. Simulación de Trayectoria en 2D
    - Descripción: Script en Python que utiliza Matplotlib y SciPy para simular la trayectoria de riego en un espacio bidimensional. Este script permite ajustar parámetros como el ángulo y la velocidad de lanzamiento para que el riego sea lo más preciso posible, adaptándose a las necesidades de la planta según los datos de humedad.
@@ -40,11 +40,11 @@ pip install -r requirements.txt
 ### Instrucciones
 
 1. Servidor TCP y Dashboard en Tiempo Real:
-   - Navega a la carpeta del proyecto que contiene `import socket.py`.
+   - Navega a la carpeta del proyecto que contiene `AnalisisDatos.py`.
    - Ejecuta el servidor TCP y el dashboard con el siguiente comando:
 
 ```bash
-python import\ socket.py
+python AnalisisDatos.py
 ```
 
    - Accede al dashboard en `http://localhost:8050` para ver los datos en tiempo real.
@@ -66,7 +66,7 @@ python tract.py
 
 - `simulacion.html` - Simulación de trayectoria de riego en 3D con Three.js.
 - `Esp32_collect_send_data.ino` - Código para el microcontrolador ESP32 que envía datos de sensores.
-- `import socket.py` - Servidor TCP que recibe datos y los visualiza en un dashboard en tiempo real.
+- `AnalisisDatos.py` - Servidor TCP que recibe datos y los visualiza en un dashboard en tiempo real.
 - `tract.py` - Simulación de trayectoria en 2D utilizando Matplotlib y SciPy.
 - `config.h` - Archivo de configuración (excluido del repositorio) para las credenciales de WiFi y la IP del servidor en el ESP32.
 
