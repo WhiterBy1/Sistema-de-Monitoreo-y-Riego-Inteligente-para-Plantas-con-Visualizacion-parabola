@@ -41,13 +41,13 @@ x_vals = v0 * np.cos(angle_rad) * t_vals
 y_vals = v0 * np.sin(angle_rad) * t_vals - (0.5 * g * t_vals**2)
 y_vals = np.maximum(y_vals, 0)  # Asegurarse de que y no sea negativo (no caer por debajo del suelo)
 
-# Configurar la figura de Matplotlib
+# Configurar la figura de Matplotlib con eje x fijo de 0 a 100
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_xlim(0, x_target * 1.5)
+ax.set_xlim(0, 100)  # Rango fijo de 0 a 100 en el eje x
 ax.set_ylim(0, max(y_vals) * 1.5)
 ax.set_xlabel("Distancia (m)")
 ax.set_ylabel("Altura (m)")
-ax.set_title(f"Trayectoria Parabólica (Ángulo = {angulo_optimo:.2f}°)")
+ax.set_title(f"Trayectoria Parabólica (Ángulo = 75°)")
 
 # Elementos de la animación
 trajectory_line, = ax.plot([], [], 'b-', lw=2)  # Línea de trayectoria
@@ -168,9 +168,9 @@ def mostrar_vectores_en_punto(x, y, vx, vy):
     labels.append(label_v)
 
     # Vector de posición (azul)
-    vector_position = ax.quiver(0, 0, x, y, angles='xy', scale_units='xy', scale=1, color='blue')
+    vector_position = ax.quiver(0, 0, x, y, angles='xy', scale_units='xy', scale=1, color='pink')
     vectors.append(vector_position)
-    label_position = ax.text(x / 2, y / 2, 'Posición', color='blue', fontsize=8)
+    label_position = ax.text(x / 2, y / 2, 'Posición', color='pink', fontsize=8)
     labels.append(label_position)
 
 def on_click(event):
