@@ -8,6 +8,9 @@ v0 = 25  # Velocidad inicial (m/s)
 x_target = float(input("Ingrese la distancia en el eje x donde quiere que la altura sea 0: "))
 escala_vectores = float(input("Ingrese el valor de escala para los vectores de velocidad (prueba distintos valores): "))
 
+#Ingresar grafica donde el X provenga de el sensor de distancia ultrasound hc-so4 
+#Implementar en app usando tkinter
+
 # Comprobar si el objetivo es alcanzable con la velocidad inicial dada
 s = (g * x_target) / (v0 ** 2)
 if abs(s) > 1:
