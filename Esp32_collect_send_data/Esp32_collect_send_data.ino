@@ -67,8 +67,8 @@ void loop() {
   float humedadDHT11 = leerHumedadDHT(dht11, "DHT11");
 
   // Generar valores LM35 aproximados a los de los DHT con una fluctuación aleatoria
-  float tempLM35_1 = tempDHT11 + random(-5, 3);
-  float tempLM35_2 = tempDHT11 + random(-3, 2);
+  float tempLM35_1 = leerLm35(LM35_PIN1);
+  float tempLM35_2 = leerLm35(LM35_PIN1);
 
   // Leer humedad de los sensores de suelo y calcular promedio
   float humedadSuelo1 = leerHumedadSuelo(SOIL_PIN1);
