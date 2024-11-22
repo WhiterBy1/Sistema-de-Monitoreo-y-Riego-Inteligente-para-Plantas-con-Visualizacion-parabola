@@ -22,7 +22,7 @@ Este proyecto combina hardware y software para recolectar, analizar y simular da
 
 ---
 
-## Detalles de los Archivos
+## Detalles de los Archivos -- funcionalidad -- 
 
 ### Esp32_collect_send_data.ino
 
@@ -134,6 +134,100 @@ Este script modela trayectorias parabólicas y visualiza los resultados, integra
    Permite seleccionar puntos específicos en el gráfico para mostrar valores detallados de tiempo, velocidad y posición.    
 
 ---
+## Detalles de los Archivos -- Codigo -- 
+
+## Esp32_collect_send_data.ino
+
+Este código recolecta datos físicos (temperatura, humedad y humedad del suelo) desde sensores conectados a un ESP32 y los transmite a un servidor.
+
+### Funcionamiento
+
+1. **Conexión a WiFi**:
+   Se conecta a una red para transmitir los datos recolectados.
+   ```
+   WiFi.begin(ssid, password);
+   while (WiFi.status() != WL_CONNECTED) {
+       delay(500);
+   }
+   ```
+
+2. **Lectura de Sensores**:
+   Los sensores DHT22 y DHT11 miden temperatura y humedad, mientras que los LM35 y sensores de suelo obtienen datos adicionales.
+   ```
+   float tempDHT22 = dht22.readTemperature();
+   float humedadDHT22 = dht22.readHumidity();
+   float humedadSuelo1 = analogRead(SOIL_PIN1);
+   ```
+
+3. **Cálculo de Promedios**:
+   Calcula promedios de temperatura y humedad para análisis más precisos.
+   ```
+   float promedioTemp = (tempDHT22 + tempDHT11) / 2.0;
+   ```
+
+4. **Transmisión de Datos**:
+   Los datos recolectados se envían al servidor en formato CSV.
+   ```
+   String datos = String(tempDHT22) + "," + String(humedadDHT22);
+   client.println(datos);
+   ```
+
+---
+
+## AnalisisDatos.py
+
+Servidor Python que recibe y analiza datos enviados por el ESP32. Utiliza Dash para la visualización en tiempo real.        
+
+### Funcionamiento
+
+1. **Recepción de Datos**:
+   Los datos recibidos por el servidor se almacenan en un DataFrame.
+   ```
+   data = self.request.recv(1024).strip()
+   parts = message.split(",")
+   data_df = pd.concat([data_df, pd.DataFrame([new_data])], ignore_index=True)
+   ```
+
+2. **Visualización**:
+   Se crean gráficos interactivos para monitorear temperaturas y humedades en tiempo real.
+   ```
+   temperature_fig.add_trace(go.Scatter(x=data_df["timestamp"], y=data_df["temperatura_DHT22"], mode='lines+markers'))      
+   ```
+
+3. **Indicadores Clave**:
+   Muestra valores máximos, promedios y cantidad de datos registrados.
+   ```
+   max_temp = data_df[["temperatura_DHT22", "temperatura_DHT11"]].max().max()
+   ```
+
+---
+
+## tract.py
+
+Simula trayectorias parabólicas con un enfoque en la física mecánica. Calcula ángulos y ecuaciones clave.
+
+### Funcionamiento
+
+1. **Cálculo del Ángulo Óptimo**:
+   Determina el ángulo necesario para alcanzar un objetivo dado:
+   ```
+   theta_rad = 0.5 * np.arcsin((g * x_target) / (v0 ** 2))
+   ```
+
+2. **Ecuación de la Parábola**:
+   Describe la trayectoria en función de \(x\):
+   ```
+   y = tan(theta) * x - (g / (2 * v0**2 * cos(theta)**2)) * x**2
+   ```
+
+3. **Visualización**:
+   Muestra la trayectoria y vectores dinámicos de velocidad:
+   ```
+   vector_vx = ax.quiver(x, y, vx, 0, angles='xy', scale_units='xy', scale=escala_vectores, color='red')
+   ```
+
+---
+
 
 ## Instalación
 
