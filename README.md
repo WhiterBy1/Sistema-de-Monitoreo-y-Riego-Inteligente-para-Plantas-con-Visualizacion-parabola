@@ -1,5 +1,5 @@
 
-# Sistema de Monitoreo y Simulación de Sensores
+# Sistema de Monitoreo y Simulación de Sensores con visualizacion de parabola
 
 Este proyecto combina hardware y software para recolectar, analizar y simular datos físicos relacionados con sensores de temperatura, humedad y mecánica clásica. Se implementan conceptos de física, como trayectorias parabólicas y análisis de condiciones ambientales, aplicando tecnologías modernas como microcontroladores, Python y Dash para visualización en tiempo real. 
 
@@ -10,6 +10,7 @@ Este proyecto combina hardware y software para recolectar, analizar y simular da
 ### Directorios y Archivos
 
 - **Esp32_collect_send_data.ino**: Código para la recolección de datos en un ESP32 utilizando sensores como DHT22, DHT11, LM35 y sensores de humedad de suelo. Los datos se envían a un servidor.
+- 
 - **config.h**: Archivo de configuración para el ESP32, que incluye credenciales de red y parámetros del servidor.
 - **AnalisisDatos.py**: Servidor Python que recibe, procesa y visualiza los datos en tiempo real utilizando Dash.
 - **Datos_De_Prueba.py**: Script para generar datos simulados y probar el sistema sin hardware real.
@@ -151,7 +152,7 @@ Este script modela trayectorias parabólicas y visualiza los resultados, integra
 
 1. Clona el repositorio:
    ```
-   git clone https://github.com/tu-repositorio.git
+   git clone https://github.com/Sistema-de-Monitoreo-y-Riego-Inteligente-para-Plantas-con-Visualizacion-parabola
    ```
 
 2. Instala las dependencias:
