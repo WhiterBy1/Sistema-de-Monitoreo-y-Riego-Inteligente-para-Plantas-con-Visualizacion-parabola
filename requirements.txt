@@ -5,4 +5,8 @@ plotly
 pyserial
 matplotlib 
 numpy
+pandas
 scipy
+dash
+setuptools
+dash-bootstrap-components

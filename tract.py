@@ -1,15 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import Angulo_search
 
 # Parámetros
 g = 9.81  # Gravedad (m/s²)
 v0 = 25  # Velocidad inicial (m/s)
-x_target = float(input("Ingrese la distancia en el eje x donde quiere que la altura sea 0: "))
-escala_vectores = float(input("Ingrese el valor de escala para los vectores de velocidad (prueba distintos valores): "))
 
-#Ingresar grafica donde el X provenga de el sensor de distancia ultrasound hc-so4 
-#Implementar en app usando tkinter
+Distancia_X = Angulo_search.buscar_distancia(prueba=True)
+print(f"Distancia: {Distancia_X} ")
+x_target =Distancia_X#float(input("Ingrese la distancia en el eje x donde quiere que la altura sea 0: "))
+
+escala_vectores = 10 #float(input("Ingrese el valor de escala para los vectores de velocidad (prueba distintos valores): "))
+
 
 # Comprobar si el objetivo es alcanzable con la velocidad inicial dada
 s = (g * x_target) / (v0 ** 2)
@@ -25,7 +28,7 @@ angulo_optimo = np.degrees(theta_rad)
 print(f"El ángulo óptimo para que la altura en x = {x_target} sea 0 es aproximadamente: {angulo_optimo:.2f}°")
 # Cálculo del ángulo óptimo usando física
 theta_rad = 0.5 * np.arcsin((g * x_target) / (v0 ** 2))
-angulo_optimo = np.degrees(theta_rad)
+angulo_optimo = (np.degrees(theta_rad) )+ 45
 
 # Parámetros para la ecuación de la parábola
 tan_theta = np.tan(theta_rad)
@@ -50,7 +53,7 @@ ax.set_xlim(0, 100)  # Rango fijo de 0 a 100 en el eje x
 ax.set_ylim(0, max(y_vals) * 1.5)
 ax.set_xlabel("Distancia (m)")
 ax.set_ylabel("Altura (m)")
-ax.set_title(f"Trayectoria Parabólica (Ángulo = 75°)")
+ax.set_title(f"Trayectoria Parabólica (Ángulo = {angulo_optimo})")
 
 # Elementos de la animación
 trajectory_line, = ax.plot([], [], 'b-', lw=2)  # Línea de trayectoria
