@@ -14,6 +14,7 @@ Este proyecto combina hardware y software para recolectar, analizar y simular da
 - **config.h**: Archivo de configuración para el ESP32, que incluye credenciales de red y parámetros del servidor.
 - **AnalisisDatos.py**: Servidor Python que recibe, procesa y visualiza los datos en tiempo real utilizando Dash.
 - **Datos_De_Prueba.py**: Script para generar datos simulados y probar el sistema sin hardware real.
+- **Informe-Proyecto.pdf**: Es el documento pdf donde se encuntra detallada la informacion sobre el proyecto presentado en feria
 - **Angulo_search.py**: Script para calcular distancias utilizando un sensor (o datos simulados), optimizando parámetros para trayectorias parabólicas.
 - **tract.py**: Simulación de trayectorias parabólicas basada en física clásica. Calcula ángulos óptimos, ecuaciones de trayectoria y genera gráficos interactivos.
 - **requirements.txt**: Lista de dependencias necesarias para el entorno Python.
